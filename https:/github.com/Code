@@ -1,0 +1,173 @@
+//setting up the HC-SR04 SENSOR
+int trigPin = 12;
+int echoPin = 11;
+int pTT;
+
+//led for moving
+int moves = 6;
+
+//led for staying still
+int still = 4;
+
+//setting up the Servo
+#include <Servo.h>
+int servoPin = 3;
+int servoVal = 180;
+Servo myServo;
+
+//setting up the arduino led to turn on when servo faces contestent
+int arduino = 13;
+
+//delays for turning the head
+int minDelay = 5000;
+int maxDelay = 10000;
+
+//for loop var
+int j;
+
+// to get the average of the ptt
+float average = 0;
+
+//timer limits
+int minDelays = 5;
+int maxDelays = 10;
+
+//timer
+int timer = 0;
+
+// for loop var
+int h;
+int k;
+
+//how to find min and max floats
+float minimum;
+float maximum;
+
+//answer for min and max diffrence
+float answer;
+
+void setup() {
+  //turning on the Serial monitor
+  Serial.begin(9600);
+
+  //Pinmode for my pins
+  pinMode(trigPin, OUTPUT);
+  pinMode(moves, OUTPUT);
+  pinMode(still, OUTPUT);
+  pinMode(arduino, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  //attaching and writing to the Servo
+  myServo.attach(servoPin);
+  myServo.write(servoVal);
+}
+
+void loop() {
+  //delay before turning off the leds
+  delay(2000);
+
+  //Turning off leds
+  digitalWrite(moves, LOW);
+  digitalWrite(still, LOW);
+
+  //set min to 10000 ready for the for# loop
+  minimum = 10000;
+
+  //Turns to 180
+  servoVal = 180;
+  myServo.write(servoVal);
+
+  //turns led off
+  digitalWrite(arduino, LOW);
+  delay(random(minDelay, maxDelay));
+
+  //Turn to 0 to face contestent
+  servoVal = 0;
+  myServo.write(servoVal);
+
+  //turns led on
+  digitalWrite(arduino, HIGH);
+
+  //for loop to get the average of ptt finding the min and max of average
+  timer = random(minDelays, maxDelays);
+  for (h = 0; h <= timer; h++) {
+    for (j = 0; j < 9; j++) {
+      //sends 9 ping
+      digitalWrite(trigPin, LOW);
+      delayMicroseconds(10);
+      digitalWrite(trigPin, HIGH);
+      delayMicroseconds(10);
+      digitalWrite(trigPin, LOW);
+      delayMicroseconds(10);
+      pTT = pulseIn(echoPin, HIGH);
+      Serial.print("Your pingTravelTime is: ");
+      Serial.println(pTT);
+
+      //delay
+      delay(10);
+
+      //makes average + ptt
+      average = average + pTT;
+    }
+
+    //gets the average
+    average = average / 9;
+
+    //converts into cm
+    average = (average * 0.034) / 2;
+
+    //prints average
+    Serial.println(average);
+
+    //delay
+    delay(1000);
+
+    //check if need to change min or max var
+    if (average < minimum) {
+      minimum = average;
+    }
+
+    if (average > maximum) {
+      maximum = average;
+    }
+  }
+
+  //prints everythink
+  Serial.println(" ");
+  Serial.print("Your Max Value is: ");
+  Serial.println(maximum);
+  Serial.println(" ");
+  Serial.print("Your Min Value is: ");
+  Serial.println(minimum);
+  Serial.println(" ");
+
+  //finds answer and prints it
+  answer = maximum - minimum;
+  Serial.println(answer);
+
+  //check for person moving
+  if (answer >= 10) {
+    //if they moved
+    Serial.println(" ");
+    digitalWrite(moves, HIGH);
+    Serial.println("You moved you lose");
+    Serial.println(" ");
+  }
+
+  if (answer <= 10) {
+    //if they didn't move
+    Serial.println(" ");
+    digitalWrite(still, HIGH);
+    Serial.println("You didn't move, Well Done");
+    Serial.println(" ");
+
+  }
+
+  //reseting my vars
+  average = 0;
+  maximum = 0;
+  minimum = 0;
+
+  //delay
+  delay(timer);
+}
